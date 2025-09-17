@@ -456,6 +456,41 @@
             }
         }
 
+        /* Player Management Styles */
+        .player-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .player-tag:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .player-tag .remove-player {
+            margin-left: 8px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .player-tag .remove-player:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
         /* Animations */
         @keyframes pulse {
             0% {
@@ -476,6 +511,21 @@
         .highlight-bid {
             background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%) !important;
             animation: pulse 1s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .player-tag {
+            animation: slideIn 0.3s ease-out;
         }
     </style>
 </head>
@@ -546,6 +596,49 @@
         <!-- Team Bidding Sections -->
         <div class="teams-grid" id="teams-container">
             <!-- Teams will be dynamically generated here -->
+        </div>
+
+        <!-- Player Management Section -->
+        <div class="data-section" id="player-management-section">
+            <h2>Player Management</h2>
+            <div style="margin-bottom: 20px;">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: #764ba2; margin-bottom: 5px; display: block;">Add Players (one per line or comma-separated)</label>
+                    <textarea id="player-input" style="width: 100%; min-height: 100px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;" placeholder="Enter player names...
+Example:
+Virat Kohli
+MS Dhoni
+Rohit Sharma
+or
+Player1, Player2, Player3"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    <button class="bid-btn" onclick="addPlayers()">➕ Add Players</button>
+                    <button class="bid-btn" onclick="clearPlayerInput()">🗑️ Clear Input</button>
+                    <button class="bid-btn" onclick="loadSamplePlayers()">📋 Load Sample Players</button>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>Total Available Players:</strong> <span id="available-count" style="color: #28a745; font-size: 1.2em;">0</span>
+                    </div>
+                    <div>
+                        <strong>Already Drafted:</strong> <span id="drafted-count" style="color: #dc3545; font-size: 1.2em;">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="player-search" placeholder="🔍 Search players..." style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;" onkeyup="searchPlayers()">
+            </div>
+
+            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px;">
+                <div id="available-players-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                    <!-- Players will be displayed here -->
+                </div>
+            </div>
         </div>
 
         <!-- Admin Console -->
@@ -1311,17 +1404,273 @@
             document.getElementById('setup-modal').classList.remove('active');
         }
 
+        // Player Management Functions
+        function addPlayers() {
+            const input = document.getElementById('player-input').value.trim();
+            if (!input) {
+                alert('Please enter player names');
+                return;
+            }
+
+            // Parse input - support both comma-separated and line-separated
+            let newPlayers = [];
+            if (input.includes(',')) {
+                newPlayers = input.split(',').map(p => p.trim()).filter(p => p);
+            } else {
+                newPlayers = input.split('\n').map(p => p.trim()).filter(p => p);
+            }
+
+            // Remove duplicates and already existing players
+            const uniquePlayers = [...new Set(newPlayers)];
+            const addedPlayers = [];
+            const duplicates = [];
+
+            uniquePlayers.forEach(player => {
+                if (!auctionState.availablePlayers.includes(player) && 
+                    !auctionState.draftedPlayers.some(dp => dp.player === player)) {
+                    auctionState.availablePlayers.push(player);
+                    addedPlayers.push(player);
+                } else {
+                    duplicates.push(player);
+                }
+            });
+
+            // Clear input
+            document.getElementById('player-input').value = '';
+
+            // Update display
+            displayAvailablePlayers();
+
+            // Show result
+            let message = '';
+            if (addedPlayers.length > 0) {
+                message += `Added ${addedPlayers.length} players successfully!\n`;
+            }
+            if (duplicates.length > 0) {
+                message += `Skipped ${duplicates.length} duplicate/drafted players.`;
+            }
+            if (message) {
+                alert(message);
+            }
+        }
+
+        function clearPlayerInput() {
+            document.getElementById('player-input').value = '';
+        }
+
+        function loadSamplePlayers() {
+            const samplePlayers = [
+                'Virat Kohli', 'MS Dhoni', 'Rohit Sharma', 'KL Rahul', 'Hardik Pandya',
+                'Jasprit Bumrah', 'Ravindra Jadeja', 'Rishabh Pant', 'Shikhar Dhawan',
+                'Mohammed Shami', 'Yuzvendra Chahal', 'Suryakumar Yadav', 'Shreyas Iyer',
+                'Axar Patel', 'Deepak Chahar', 'Shardul Thakur', 'Washington Sundar',
+                'Ishan Kishan', 'Prithvi Shaw', 'Ruturaj Gaikwad', 'Shubman Gill',
+                'Mohammed Siraj', 'Kuldeep Yadav', 'Bhuvneshwar Kumar', 'Umesh Yadav'
+            ];
+
+            document.getElementById('player-input').value = samplePlayers.join('\n');
+        }
+
+        function displayAvailablePlayers() {
+            const container = document.getElementById('available-players-list');
+            const availableCount = document.getElementById('available-count');
+            const draftedCount = document.getElementById('drafted-count');
+
+            // Update counts
+            availableCount.textContent = auctionState.availablePlayers.length;
+            draftedCount.textContent = auctionState.draftedPlayers.length;
+
+            // Clear container
+            container.innerHTML = '';
+
+            // Get search term
+            const searchTerm = document.getElementById('player-search').value.toLowerCase();
+
+            // Filter and display players
+            const filteredPlayers = auctionState.availablePlayers.filter(player => 
+                player.toLowerCase().includes(searchTerm)
+            );
+
+            if (filteredPlayers.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No players available. Add players above to get started!</div>';
+                return;
+            }
+
+            filteredPlayers.sort().forEach(player => {
+                const playerTag = document.createElement('div');
+                playerTag.className = 'player-tag';
+                playerTag.innerHTML = `
+                    <span>${player}</span>
+                    <span class="remove-player" onclick="removePlayer('${player.replace(/'/g, "\\'")}')" title="Remove player">✕</span>
+                `;
+                container.appendChild(playerTag);
+            });
+        }
+
+        function removePlayer(playerName) {
+            if (!confirm(`Remove ${playerName} from available players?`)) {
+                return;
+            }
+
+            const index = auctionState.availablePlayers.indexOf(playerName);
+            if (index > -1) {
+                auctionState.availablePlayers.splice(index, 1);
+                displayAvailablePlayers();
+            }
+        }
+
+        function searchPlayers() {
+            displayAvailablePlayers();
+        }
+
+        // Update the existing nominatePlayer function to validate against available players
+        function nominatePlayer() {
+            if (!auctionState.isActive || auctionState.isPaused) {
+                alert('Auction is not active or is paused!');
+                return;
+            }
+
+            const playerName = document.getElementById('player-name-input').value.trim();
+            const startingBid = parseFloat(document.getElementById('starting-bid-input').value);
+
+            if (!playerName) {
+                alert('Please enter a player name');
+                return;
+            }
+
+            if (!auctionState.availablePlayers.includes(playerName)) {
+                alert('Player not in available players list or already drafted! Please check the available players list below.');
+                return;
+            }
+
+            if (!startingBid || startingBid < 2) {
+                alert('Starting bid must be at least 2k');
+                return;
+            }
+
+            if (startingBid % 0.5 !== 0) {
+                alert('Bid must be in increments of 0.5k');
+                return;
+            }
+
+            const currentTeamIndex = auctionState.nominationOrder[auctionState.currentNominationIndex];
+            const nominatingTeam = auctionState.teams[currentTeamIndex];
+
+            // Set auction state
+            auctionState.currentPlayer = playerName;
+            auctionState.nominatingTeam = nominatingTeam.name;
+            auctionState.initialBid = startingBid;
+            auctionState.currentBid = startingBid;
+            auctionState.leadingTeam = nominatingTeam.name;
+
+            // Update displays
+            document.getElementById('current-player').textContent = playerName;
+            document.getElementById('nominating-team').textContent = nominatingTeam.name;
+            document.getElementById('initial-bid').textContent = `₹${startingBid}k`;
+            document.getElementById('current-bid').textContent = `₹${startingBid}k`;
+            document.getElementById('leading-team').textContent = nominatingTeam.name;
+
+            // Add to bid history
+            auctionState.bidHistory.push({
+                timestamp: new Date().toLocaleTimeString(),
+                player: playerName,
+                team: nominatingTeam.name,
+                amount: startingBid
+            });
+            updateBidHistoryTable();
+
+            // Clear nomination inputs
+            document.getElementById('player-name-input').value = '';
+            document.getElementById('starting-bid-input').value = '';
+
+            // Clear nomination timer
+            if (nominationTimer) clearInterval(nominationTimer);
+
+            // Start bid countdown process
+            resetCountdownTimer();
+        }
+
+        // Update finalizeBid to remove player from available list and update display
+        function finalizeBid() {
+            if (!auctionState.currentPlayer) return;
+
+            const winningTeam = auctionState.teams.find(t => t.name === auctionState.leadingTeam);
+            const playerName = auctionState.currentPlayer;
+            
+            // Update team budget and add player
+            winningTeam.budget -= auctionState.currentBid;
+            winningTeam.players.push({
+                name: playerName,
+                cost: auctionState.currentBid
+            });
+
+            // Add to drafted players
+            auctionState.draftedPlayers.push({
+                player: playerName,
+                team: winningTeam.name,
+                finalBid: auctionState.currentBid
+            });
+
+            // Remove from available players
+            const playerIndex = auctionState.availablePlayers.indexOf(playerName);
+            if (playerIndex > -1) {
+                auctionState.availablePlayers.splice(playerIndex, 1);
+            }
+
+            // Update displays
+            updateDraftedPlayersTable();
+            displayAvailablePlayers();
+
+            // Show alert before reset
+            alert(`${playerName} sold to ${winningTeam.name} for ₹${auctionState.currentBid}k!`);
+
+            // Reset auction state
+            resetCurrentAuction();
+
+            // Update team displays
+            renderTeams();
+
+            // Move to next nomination
+            moveToNextNomination();
+        }
+
+        // Add autocomplete functionality for player nomination
+        function setupPlayerAutocomplete() {
+            const playerInput = document.getElementById('player-name-input');
+            
+            playerInput.addEventListener('input', function() {
+                const value = this.value.toLowerCase();
+                if (value.length < 2) return;
+
+                const matches = auctionState.availablePlayers.filter(player =>
+                    player.toLowerCase().includes(value)
+                ).slice(0, 5);
+
+                // You can implement a dropdown here for autocomplete suggestions
+                // For now, we'll use the browser's datalist
+                let datalist = document.getElementById('player-suggestions');
+                if (!datalist) {
+                    datalist = document.createElement('datalist');
+                    datalist.id = 'player-suggestions';
+                    document.body.appendChild(datalist);
+                    playerInput.setAttribute('list', 'player-suggestions');
+                }
+
+                datalist.innerHTML = '';
+                matches.forEach(player => {
+                    const option = document.createElement('option');
+                    option.value = player;
+                    datalist.appendChild(option);
+                });
+            });
+        }
+
         // Initialize on load
         window.onload = function() {
             initializeTeams();
             
-            // Set initial available players
-            auctionState.availablePlayers = [
-                'Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5',
-                'Player 6', 'Player 7', 'Player 8', 'Player 9', 'Player 10',
-                'Player 11', 'Player 12', 'Player 13', 'Player 14', 'Player 15',
-                'Player 16', 'Player 17', 'Player 18', 'Player 19', 'Player 20'
-            ];
+            // Set initial available players - empty by default
+            auctionState.availablePlayers = [];
 
             // Set default nomination order (snake: 0,1,2,3,4,5)
             auctionState.nominationOrder = [0, 1, 2, 3, 4, 5];
@@ -1330,8 +1679,13 @@
             document.querySelectorAll('.bid-btn').forEach(btn => {
                 btn.disabled = true;
             });
+
+            // Display empty player list
+            displayAvailablePlayers();
+
+            // Setup autocomplete
+            setupPlayerAutocomplete();
         };
     </script>
 </body>
-
 </html>
