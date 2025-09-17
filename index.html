@@ -613,9 +613,9 @@ or
 Player1, Player2, Player3"></textarea>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                    <button class="bid-btn player-mgmt-btn" onclick="addPlayers()">➕ Add Players</button>
-                    <button class="bid-btn player-mgmt-btn" onclick="clearPlayerInput()">🗑️ Clear Input</button>
-                    <button class="bid-btn player-mgmt-btn" onclick="loadSamplePlayers()">📋 Load Sample Players</button>
+                    <button class="admin-btn" style="background: #28a745;" onclick="addPlayers()">➕ Add Players</button>
+                    <button class="admin-btn" style="background: #dc3545;" onclick="clearPlayerInput()">🗑️ Clear Input</button>
+                    <button class="admin-btn" style="background: #17a2b8;" onclick="loadSamplePlayers()">📋 Load Sample Players</button>
                 </div>
             </div>
             
@@ -1203,10 +1203,16 @@ Player1, Player2, Player3"></textarea>
             auctionState.isActive = true;
             auctionState.isPaused = false;
 
-            // Enable all bid buttons except player management buttons
-            document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
+            // Enable all team bid buttons
+            document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
                 btn.disabled = false;
             });
+            
+            // Enable nomination button
+            const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+            if (nominateBtn) {
+                nominateBtn.disabled = false;
+            }
 
             // Start nomination timer for first team
             if (!auctionState.currentPlayer) {
@@ -1230,10 +1236,16 @@ Player1, Player2, Player3"></textarea>
                 if (nominationTimer) clearInterval(nominationTimer);
                 if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
 
-                // Disable all bid buttons except player management
-                document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
+                // Disable all team bid buttons
+                document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
                     btn.disabled = true;
                 });
+                
+                // Disable nomination button
+                const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+                if (nominateBtn) {
+                    nominateBtn.disabled = true;
+                }
 
                 alert('Auction paused!');
             } else {
@@ -1244,10 +1256,16 @@ Player1, Player2, Player3"></textarea>
                     startNominationTimer();
                 }
 
-                // Enable all bid buttons except player management
-                document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
+                // Enable all team bid buttons
+                document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
                     btn.disabled = false;
                 });
+                
+                // Enable nomination button
+                const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+                if (nominateBtn) {
+                    nominateBtn.disabled = false;
+                }
 
                 alert('Auction resumed!');
             }
@@ -1322,10 +1340,15 @@ Player1, Player2, Player3"></textarea>
             auctionState.nominationOrder = [0, 1, 2, 3, 4, 5];
             displayAvailablePlayers();
 
-            // Disable only bid-related buttons (keep player management enabled)
-            document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
+            // Disable only team bid buttons and nomination button
+            document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
                 btn.disabled = true;
             });
+            
+            const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+            if (nominateBtn) {
+                nominateBtn.disabled = true;
+            }
 
             alert('Auction reset! Please add players and start again.');
         }
@@ -1691,15 +1714,16 @@ Player1, Player2, Player3"></textarea>
             // Set default nomination order (snake: 0,1,2,3,4,5)
             auctionState.nominationOrder = [0, 1, 2, 3, 4, 5];
 
-            // Disable ONLY bid-related buttons initially (not player management buttons)
-            document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
+            // Disable ONLY bid buttons initially - not admin or player management buttons
+            document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
                 btn.disabled = true;
             });
-
-            // Keep player management buttons always enabled
-            document.querySelectorAll('.player-mgmt-btn').forEach(btn => {
-                btn.disabled = false;
-            });
+            
+            // Also disable nomination button initially
+            const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+            if (nominateBtn) {
+                nominateBtn.disabled = true;
+            }
 
             // Display empty player list
             displayAvailablePlayers();
