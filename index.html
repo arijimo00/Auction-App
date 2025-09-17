@@ -613,9 +613,9 @@ or
 Player1, Player2, Player3"></textarea>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-                    <button class="bid-btn" onclick="addPlayers()">➕ Add Players</button>
-                    <button class="bid-btn" onclick="clearPlayerInput()">🗑️ Clear Input</button>
-                    <button class="bid-btn" onclick="loadSamplePlayers()">📋 Load Sample Players</button>
+                    <button class="bid-btn player-mgmt-btn" onclick="addPlayers()">➕ Add Players</button>
+                    <button class="bid-btn player-mgmt-btn" onclick="clearPlayerInput()">🗑️ Clear Input</button>
+                    <button class="bid-btn player-mgmt-btn" onclick="loadSamplePlayers()">📋 Load Sample Players</button>
                 </div>
             </div>
             
@@ -1188,6 +1188,12 @@ Player1, Player2, Player3"></textarea>
                 return;
             }
 
+            // Check if players are added
+            if (auctionState.availablePlayers.length === 0) {
+                alert('Please add players before starting the auction!');
+                return;
+            }
+
             // Show setup modal if first time
             if (auctionState.teams.length === 0) {
                 document.getElementById('setup-modal').classList.add('active');
@@ -1197,8 +1203,8 @@ Player1, Player2, Player3"></textarea>
             auctionState.isActive = true;
             auctionState.isPaused = false;
 
-            // Enable all buttons
-            document.querySelectorAll('.bid-btn').forEach(btn => {
+            // Enable all bid buttons except player management buttons
+            document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
                 btn.disabled = false;
             });
 
@@ -1224,8 +1230,8 @@ Player1, Player2, Player3"></textarea>
                 if (nominationTimer) clearInterval(nominationTimer);
                 if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
 
-                // Disable all buttons
-                document.querySelectorAll('.bid-btn').forEach(btn => {
+                // Disable all bid buttons except player management
+                document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
                     btn.disabled = true;
                 });
 
@@ -1238,8 +1244,8 @@ Player1, Player2, Player3"></textarea>
                     startNominationTimer();
                 }
 
-                // Enable all buttons
-                document.querySelectorAll('.bid-btn').forEach(btn => {
+                // Enable all bid buttons except player management
+                document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
                     btn.disabled = false;
                 });
 
@@ -1311,7 +1317,17 @@ Player1, Player2, Player3"></textarea>
             document.getElementById('drafted-players').innerHTML = '';
             document.getElementById('teams-container').innerHTML = '';
 
-            alert('Auction reset! Please set up teams again.');
+            // Re-initialize
+            initializeTeams();
+            auctionState.nominationOrder = [0, 1, 2, 3, 4, 5];
+            displayAvailablePlayers();
+
+            // Disable only bid-related buttons (keep player management enabled)
+            document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
+                btn.disabled = true;
+            });
+
+            alert('Auction reset! Please add players and start again.');
         }
 
         function exportData() {
@@ -1675,9 +1691,14 @@ Player1, Player2, Player3"></textarea>
             // Set default nomination order (snake: 0,1,2,3,4,5)
             auctionState.nominationOrder = [0, 1, 2, 3, 4, 5];
 
-            // Disable bid buttons initially
-            document.querySelectorAll('.bid-btn').forEach(btn => {
+            // Disable ONLY bid-related buttons initially (not player management buttons)
+            document.querySelectorAll('.bid-btn:not(.player-mgmt-btn)').forEach(btn => {
                 btn.disabled = true;
+            });
+
+            // Keep player management buttons always enabled
+            document.querySelectorAll('.player-mgmt-btn').forEach(btn => {
+                btn.disabled = false;
             });
 
             // Display empty player list
