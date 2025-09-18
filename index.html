@@ -86,27 +86,35 @@
         }
 
         .timer-card {
-            background: white;
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
             text-align: center;
+            transition: all 0.3s;
+        }
+
+        .timer-card.inactive {
+            background: #6c757d;
+            color: white;
+        }
+
+        .timer-card.active {
+            background: #dc3545;
+            color: white;
         }
 
         .timer-display {
             font-size: 3em;
             font-weight: bold;
-            color: #667eea;
             margin: 10px 0;
             font-family: 'Courier New', monospace;
         }
 
-        .countdown-timer {
-            background: #ff6b6b;
-            color: white;
+        .timer-card.inactive .timer-display {
+            color: rgba(255, 255, 255, 0.8);
         }
 
-        .countdown-timer .timer-display {
+        .timer-card.active .timer-display {
             color: white;
         }
 
@@ -601,21 +609,21 @@
 
         <!-- Timers -->
         <div class="timers-section">
-            <div class="timer-card countdown-timer">
+            <div class="timer-card inactive" id="countdown-timer-card">
                 <h3>⏰ Bid Countdown</h3>
-                <div class="timer-display" id="countdown-timer">5</div>
+                <div class="timer-display" id="countdown-timer">--</div>
                 <p>Last chance to bid!</p>
             </div>
-            <div class="timer-card">
+            <div class="timer-card inactive" id="nomination-timer-card">
                 <h3>⏱️ Nomination Timer</h3>
-                <div class="timer-display" id="nomination-timer">1:30</div>
+                <div class="timer-display" id="nomination-timer">--</div>
                 <p>Time to nominate</p>
             </div>
         </div>
 
         <!-- Nomination Section -->
         <div class="nomination-section">
-            <h2 style="color: #764ba2; margin-bottom: 15px;">Player Nomination</h2>
+            <h2 style="color: #764ba2; margin-bottom: 15px;">Player Nomination - <span id="nomination-team-name">Waiting to Start</span></h2>
             <div class="nomination-form">
                 <div class="form-group">
                     <label>Player Name</label>
@@ -1067,21 +1075,24 @@ Player1, Player2, Player3"></textarea>
             if (countdownTimer) clearInterval(countdownTimer);
             if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
 
-            // Hide countdown initially
-            document.getElementById('countdown-timer').textContent = '5';
-            document.querySelector('.countdown-timer').style.display = 'none';
+            // Set countdown timer to inactive state
+            document.getElementById('countdown-timer').textContent = '--';
+            document.getElementById('countdown-timer-card').className = 'timer-card inactive';
 
             // Start 20-second cooldown before showing countdown
             bidCooldownTimer = setTimeout(() => {
-                // Show and start countdown
-                document.querySelector('.countdown-timer').style.display = 'block';
+                // Activate countdown timer (turn red)
                 countdownValue = 5;
+                document.getElementById('countdown-timer-card').className = 'timer-card active';
                 
                 countdownTimer = setInterval(() => {
                     document.getElementById('countdown-timer').textContent = countdownValue;
                     
                     if (countdownValue <= 0) {
                         clearInterval(countdownTimer);
+                        // Return to inactive state
+                        document.getElementById('countdown-timer-card').className = 'timer-card inactive';
+                        document.getElementById('countdown-timer').textContent = '--';
                         finalizeBid();
                     }
                     
@@ -1152,7 +1163,10 @@ Player1, Player2, Player3"></textarea>
             // Clear timers
             if (countdownTimer) clearInterval(countdownTimer);
             if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
-            document.querySelector('.countdown-timer').style.display = 'none';
+            
+            // Set countdown timer to inactive
+            document.getElementById('countdown-timer').textContent = '--';
+            document.getElementById('countdown-timer-card').className = 'timer-card inactive';
         }
 
         // Move to Next Nomination
@@ -1164,6 +1178,8 @@ Player1, Player2, Player3"></textarea>
                 alert(`Round ${auctionState.roundNumber} starting!`);
             }
 
+            // Update the nominating team display even before timer starts
+            updateNominatingTeamDisplay();
             startNominationTimer();
         }
 
@@ -1173,6 +1189,9 @@ Player1, Player2, Player3"></textarea>
             
             nominationValue = 90; // Reset to 1:30
             
+            // Activate nomination timer (turn red)
+            document.getElementById('nomination-timer-card').className = 'timer-card active';
+            
             nominationTimer = setInterval(() => {
                 const minutes = Math.floor(nominationValue / 60);
                 const seconds = nominationValue % 60;
@@ -1181,6 +1200,9 @@ Player1, Player2, Player3"></textarea>
                 
                 if (nominationValue <= 0) {
                     clearInterval(nominationTimer);
+                    // Return to inactive state
+                    document.getElementById('nomination-timer-card').className = 'timer-card inactive';
+                    document.getElementById('nomination-timer').textContent = '--';
                     alert('Nomination time expired!');
                     // Auto-nominate a random player
                     autoNominate();
@@ -1190,10 +1212,23 @@ Player1, Player2, Player3"></textarea>
             }, 1000);
 
             // Update nomination section with current team
+            updateNominatingTeamDisplay();
+        }
+
+        // Update Nominating Team Display
+        function updateNominatingTeamDisplay() {
             const currentTeamIndex = auctionState.nominationOrder[auctionState.currentNominationIndex];
             const currentTeam = auctionState.teams[currentTeamIndex];
-            document.querySelector('.nomination-section h2').textContent = 
-                `Player Nomination - ${currentTeam.name}'s Turn`;
+            
+            if (currentTeam) {
+                document.getElementById('nomination-team-name').textContent = `${currentTeam.name}'s Turn`;
+                document.getElementById('nomination-team-name').style.color = '#dc3545';
+                document.getElementById('nomination-team-name').style.fontWeight = 'bold';
+            } else {
+                document.getElementById('nomination-team-name').textContent = 'Waiting to Start';
+                document.getElementById('nomination-team-name').style.color = '#764ba2';
+                document.getElementById('nomination-team-name').style.fontWeight = 'normal';
+            }
         }
 
         // Auto Nominate
@@ -1274,6 +1309,9 @@ Player1, Player2, Player3"></textarea>
 
             // Clear nomination timer
             if (nominationTimer) clearInterval(nominationTimer);
+            // Set nomination timer to inactive
+            document.getElementById('nomination-timer-card').className = 'timer-card inactive';
+            document.getElementById('nomination-timer').textContent = '--';
 
             // Start bid countdown process
             resetCountdownTimer();
@@ -1498,6 +1536,7 @@ Player1, Player2, Player3"></textarea>
 
             // Start nomination timer for first team
             if (!auctionState.currentPlayer) {
+                updateNominatingTeamDisplay();  // Show first team immediately
                 startNominationTimer();
             }
 
@@ -1517,6 +1556,12 @@ Player1, Player2, Player3"></textarea>
                 if (countdownTimer) clearInterval(countdownTimer);
                 if (nominationTimer) clearInterval(nominationTimer);
                 if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
+
+                // Set both timers to inactive state
+                document.getElementById('countdown-timer-card').className = 'timer-card inactive';
+                document.getElementById('countdown-timer').textContent = '--';
+                document.getElementById('nomination-timer-card').className = 'timer-card inactive';
+                document.getElementById('nomination-timer').textContent = '--';
 
                 // Disable all team bid buttons
                 document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
@@ -1592,6 +1637,17 @@ Player1, Player2, Player3"></textarea>
             if (countdownTimer) clearInterval(countdownTimer);
             if (nominationTimer) clearInterval(nominationTimer);
             if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
+
+            // Reset timers to inactive state
+            document.getElementById('countdown-timer-card').className = 'timer-card inactive';
+            document.getElementById('countdown-timer').textContent = '--';
+            document.getElementById('nomination-timer-card').className = 'timer-card inactive';
+            document.getElementById('nomination-timer').textContent = '--';
+
+            // Reset nomination team display
+            document.getElementById('nomination-team-name').textContent = 'Waiting to Start';
+            document.getElementById('nomination-team-name').style.color = '#764ba2';
+            document.getElementById('nomination-team-name').style.fontWeight = 'normal';
 
             // Reset state
             auctionState = {
