@@ -589,20 +589,22 @@
                     <p id="current-player">-</p>
                 </div>
                 <div class="info-card">
-                    <h3>Nominating Team</h3>
-                    <p id="nominating-team">-</p>
+                    <h3>Previous Leader</h3>
+                    <p id="previous-leader">-</p>
                 </div>
                 <div class="info-card">
-                    <h3>Initial Bid</h3>
-                    <p id="initial-bid">-</p>
+                    <h3>Previous Bid</h3>
+                    <p id="previous-bid">-</p>
                 </div>
-                <div class="info-card">
-                    <h3>Current Bid</h3>
-                    <p id="current-bid" style="color: #ffd93d;">-</p>
-                </div>
-                <div class="info-card">
-                    <h3>Leading Team</h3>
-                    <p id="leading-team">-</p>
+                <div class="info-card" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div>
+                        <h3 style="margin-bottom: 5px;">Current Bid</h3>
+                        <p id="current-bid" style="color: #ffd93d; margin: 0;">-</p>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 5px;">Leading Team</h3>
+                        <p id="leading-team" style="margin: 0;">-</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -769,6 +771,8 @@ Player1, Player2, Player3"></textarea>
             initialBid: 0,
             currentBid: 0,
             leadingTeam: null,
+            previousBid: 0,
+            previousLeader: null,
             teams: [],
             bidHistory: [],
             draftedPlayers: [],
@@ -1039,6 +1043,12 @@ Player1, Player2, Player3"></textarea>
         function updateBid(teamId, newBid) {
             const team = auctionState.teams[teamId];
             
+            // Store previous values before updating
+            if (auctionState.currentBid > 0 && auctionState.leadingTeam) {
+                auctionState.previousBid = auctionState.currentBid;
+                auctionState.previousLeader = auctionState.leadingTeam;
+            }
+            
             // Update auction state
             auctionState.currentBid = newBid;
             auctionState.leadingTeam = team.name;
@@ -1055,6 +1065,12 @@ Player1, Player2, Player3"></textarea>
             // Update display
             document.getElementById('current-bid').textContent = `₹${newBid}k`;
             document.getElementById('leading-team').textContent = team.name;
+            
+            // Update previous values display
+            if (auctionState.previousBid > 0 && auctionState.previousLeader) {
+                document.getElementById('previous-bid').textContent = `₹${auctionState.previousBid}k`;
+                document.getElementById('previous-leader').textContent = auctionState.previousLeader;
+            }
 
             // Highlight the bidding team
             document.querySelectorAll('.team-card').forEach(card => {
@@ -1152,11 +1168,13 @@ Player1, Player2, Player3"></textarea>
             auctionState.initialBid = 0;
             auctionState.currentBid = 0;
             auctionState.leadingTeam = null;
+            auctionState.previousBid = 0;
+            auctionState.previousLeader = null;
 
             // Clear displays
             document.getElementById('current-player').textContent = '-';
-            document.getElementById('nominating-team').textContent = '-';
-            document.getElementById('initial-bid').textContent = '-';
+            document.getElementById('previous-leader').textContent = '-';
+            document.getElementById('previous-bid').textContent = '-';
             document.getElementById('current-bid').textContent = '-';
             document.getElementById('leading-team').textContent = '-';
 
@@ -1286,11 +1304,15 @@ Player1, Player2, Player3"></textarea>
             auctionState.initialBid = startingBid;
             auctionState.currentBid = startingBid;
             auctionState.leadingTeam = nominatingTeam.name;
+            
+            // Reset previous values for new nomination
+            auctionState.previousBid = 0;
+            auctionState.previousLeader = null;
 
             // Update displays
             document.getElementById('current-player').textContent = playerName;
-            document.getElementById('nominating-team').textContent = nominatingTeam.name;
-            document.getElementById('initial-bid').textContent = `₹${startingBid}k`;
+            document.getElementById('previous-leader').textContent = '-';
+            document.getElementById('previous-bid').textContent = '-';
             document.getElementById('current-bid').textContent = `₹${startingBid}k`;
             document.getElementById('leading-team').textContent = nominatingTeam.name;
 
@@ -1611,12 +1633,30 @@ Player1, Player2, Player3"></textarea>
             const previousBid = auctionState.bidHistory[auctionState.bidHistory.length - 1];
             
             if (previousBid) {
+                // Store current as previous before reverting
+                auctionState.previousBid = auctionState.currentBid;
+                auctionState.previousLeader = auctionState.leadingTeam;
+                
+                // Revert to previous bid
                 auctionState.currentBid = previousBid.amount;
                 auctionState.leadingTeam = previousBid.team;
 
                 // Update displays
                 document.getElementById('current-bid').textContent = `₹${previousBid.amount}k`;
                 document.getElementById('leading-team').textContent = previousBid.team;
+                
+                // Update previous bid display if we have more than initial bid
+                if (auctionState.bidHistory.length > 1) {
+                    const priorBid = auctionState.bidHistory[auctionState.bidHistory.length - 2];
+                    if (priorBid) {
+                        document.getElementById('previous-bid').textContent = `₹${priorBid.amount}k`;
+                        document.getElementById('previous-leader').textContent = priorBid.team;
+                    }
+                } else {
+                    // Back to initial bid, no previous
+                    document.getElementById('previous-bid').textContent = '-';
+                    document.getElementById('previous-leader').textContent = '-';
+                }
 
                 // Update bid history table
                 updateBidHistoryTable();
