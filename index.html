@@ -632,6 +632,13 @@
             <!-- Teams will be dynamically generated here -->
         </div>
 
+        <!-- Live Team Rosters -->
+        <div class="data-section" id="live-rosters">
+            <h2>Live Team Rosters</h2>
+            <div class="teams-grid" id="drafted-teams-grid"></div>
+        </div>
+
+
         <!-- Player Management Section -->
         <div class="data-section" id="player-management-section">
             <h2>Player Management</h2>
@@ -859,7 +866,14 @@ Player1, Player2, Player3"></textarea>
                 
                 teamCard.innerHTML = `
                     <div class="team-header">
-                        <div class="team-logo">${team.logo}</div>
+                        <div class="team-logo">
+                            style="${(typeof team.logo === 'string' && (team.logo.startsWith('blob:') || team.logo.startsWith('http')))
+                                ? `background-image:url('${team.logo}')`
+                                : ''}">
+                            ${(typeof team.logo === 'string' && !(team.logo.startsWith('blob:') || team.logo.startsWith('http')))
+                                ? team.logo.toUpperCase()
+                                : ''}
+                        </div>
                         <div class="team-info">
                             <h3>${team.name}</h3>
                             <div class="coaches">${team.coaches}</div>
@@ -886,7 +900,40 @@ Player1, Player2, Player3"></textarea>
                 
                 container.appendChild(teamCard);
             });
+            updateLiveDraftedTeams();
         }
+        
+        // Updating Drafted Team
+        function updateLiveDraftedTeams() {
+            const grid = document.getElementById('drafted-teams-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            auctionState.teams.forEach(team => {
+                const playersList = (team.players && team.players.length)
+                    ? team.players.map(p => `<li>${p.name} – ₹${p.cost}k</li>`).join('')
+                    : '<li>No picks yet</li>';
+
+                const isUrlLogo = (typeof team.logo === 'string') && (team.logo.startsWith('blob:') || team.logo.startsWith('http'));
+
+                const card = document.createElement('div');
+                card.className = 'team-card';
+                card.innerHTML = `
+                    <div class="team-header">
+                        <div class="team-logo" style="${isUrlLogo ? `background-image:url('${team.logo}')` : ''}">
+                            ${!isUrlLogo ? (String(team.logo || team.name.charAt(0)).toUpperCase()) : ''}
+                        </div>
+                        <div class="team-info">
+                            <h3>${team.name}</h3>
+                            <div class="coaches">${team.coaches || ''}</div>
+                        </div>
+                    </div>
+                    <ul style="margin-left:18px">${playersList}</ul>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
 
         // Calculate Maximum Bid
         function calculateMaxBid(team) {
@@ -1427,6 +1474,13 @@ Player1, Player2, Player3"></textarea>
             if (nominationTimer) clearInterval(nominationTimer);
             if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
 
+            // Update Timers
+            setTimerInactive('countdown');
+            setTimerInactive('nomination');
+
+            //Update Drafts
+            updateLiveDraftedTeams();
+
             // Reset state
             auctionState = {
                 isActive: false,
@@ -1771,6 +1825,9 @@ Player1, Player2, Player3"></textarea>
             // Update displays
             updateDraftedPlayersTable();
             displayAvailablePlayers();
+
+            // Update Drafted Tab
+            updateLiveDraftedTeams();
 
             // Show alert before reset
             alert(`${playerName} sold to ${winningTeam.name} for ₹${auctionState.currentBid}k!`);
