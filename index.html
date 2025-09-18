@@ -1,321 +1,1991 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Auction / Draft App</title>
-  <style>
-    /* ========== Timer Styles ========== */
-    .timer-card {
-      padding: 10px;
-      margin: 10px;
-      border-radius: 5px;
-      display: inline-block;
-      min-width: 120px;
-      text-align: center;
-      font-size: 1.5em;
-      color: white;
-    }
-    .timer-card.inactive {
-      background: #ccc;
-      color: #555;
-    }
-    .timer-card.inactive .timer-display {
-      color: #555;
-    }
-    .timer-card.active {
-      background: red;
-      color: white;
-    }
-    .timer-display {
-      font-weight: bold;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Auction System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    /* ========== Teams / Cards / Roster Styles ========== */
-    .teams-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin-top: 20px;
-    }
-    .team-card {
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      padding: 15px;
-      width: 200px;
-      box-sizing: border-box;
-    }
-    .team-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .team-logo {
-      width: 50px;
-      height: 50px;
-      border: 1px solid #666;
-      border-radius: 5px;
-      background-size: cover;
-      background-position: center;
-      margin-right: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5em;
-      color: white;
-      background-color: #444;
-    }
-    .team-info h3 {
-      margin: 0;
-      font-size: 1.2em;
-    }
-    .team-info .coaches {
-      font-size: 0.9em;
-      color: #555;
-    }
-    ul {
-      padding-left: 20px;
-      margin: 0;
-    }
-    ul li {
-      margin-bottom: 5px;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
 
-    /* Admin/Setup Section Styling */
-    .admin-section {
-      margin-top: 40px;
-      border: 1px solid #888;
-      padding: 20px;
-      border-radius: 8px;
-    }
-    .admin-section h2 {
-      margin-top: 0;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-    }
-    .controls {
-      margin-top: 20px;
-    }
-    .controls button {
-      padding: 10px 15px;
-      margin-right: 10px;
-    }
-  </style>
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            color: #764ba2;
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        /* Current Bid Display */
+        .current-bid-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            color: white;
+            text-align: center;
+        }
+
+        .player-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .timer-box.active {
+            background-color: red;
+            color: white;
+        }
+
+        .timer-box.inactive {
+            background-color: #ccc;
+            color: #333;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .info-card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .info-card p {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        /* Timer Styles */
+        .timers-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .timer-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .timer-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .countdown-timer {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .countdown-timer .timer-display {
+            color: white;
+        }
+
+        /* === Timer state overrides === */
+        .timer-card.timer-active {
+            background: #ff6b6b !important;
+            color: #fff !important;
+        }
+        .timer-card.timer-active .timer-display {
+            color: #fff !important;
+        }
+        .timer-card.timer-inactive {
+            background: #ccc !important;
+            color: #555 !important;
+        }
+        .timer-card.timer-inactive .timer-display {
+            color: #555 !important;
+        }
+
+
+        /* Nomination Section */
+        .nomination-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .nomination-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        .form-group input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        /* Team Sections */
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .team-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .team-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .team-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .team-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.5em;
+            margin-right: 15px;
+        }
+
+        .team-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .coaches {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .budget-display {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .budget-amount {
+            font-size: 2em;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .bid-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .bid-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .bid-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .bid-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .bid-btn.max-bid {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            grid-column: span 3;
+        }
+
+        .custom-bid-container {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+        }
+
+        .custom-bid-input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        /* Team setup preview cell */
+        .team-logo-preview {
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #e6e6e6;
+        }
+
+        /* Admin Console */
+        .admin-console {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .admin-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .admin-btn.start {
+            background: #28a745;
+            color: white;
+        }
+
+        .admin-btn.pause {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .admin-btn.undo {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .admin-btn.reset {
+            background: #dc3545;
+            color: white;
+        }
+
+        .admin-btn.export {
+            background: #6610f2;
+            color: white;
+        }
+
+        .admin-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Data Tables */
+        .data-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-section h2 {
+            color: #764ba2;
+            margin-bottom: 15px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Setup Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #764ba2;
+        }
+
+        .setup-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .setup-form .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setup-form textarea {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-btn.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .teams-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nomination-form {
+                grid-template-columns: 1fr;
+            }
+
+            .bid-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .timer-display {
+                font-size: 2em;
+            }
+        }
+
+        /* Player Management Styles */
+        .player-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .player-tag:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .player-tag .remove-player {
+            margin-left: 8px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .player-tag .remove-player:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        .highlight-bid {
+            background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%) !important;
+            animation: pulse 1s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .player-tag {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏆 Player Auction System</h1>
+        </div>
 
-  <h1>Auction / Drafting App</h1>
-
-  <!-- Timers Section -->
-  <div class="timers">
-    <div id="countdown-timer-card" class="timer-card inactive">
-      <span class="timer-display" id="countdown-timer">--</span>
-      <div>Countdown Timer</div>
-    </div>
-    <div id="nomination-timer-card" class="timer-card inactive">
-      <span class="timer-display" id="nomination-timer">--</span>
-      <div>Nomination Timer</div>
-    </div>
-  </div>
-
-  <!-- (Your existing buttons / controls for timers and auction would be here) -->
-  <div class="controls">
-    <button id="start-countdown">Start Countdown</button>
-    <button id="pause-countdown">Pause Countdown</button>
-    <button id="reset-countdown">Reset Countdown</button>
-    <button id="start-nomination">Start Nomination</button>
-    <button id="pause-nomination">Pause Nomination</button>
-    <button id="reset-nomination">Reset Nomination</button>
-  </div>
-
-  <!-- ========== Admin Section: Team Info Setup ========== -->
-  <div class="admin-section">
-    <h2>Admin: Setup Teams</h2>
-    <div class="form-group">
-      <label>Team Names (Team 1 to Team 6)</label>
-      <input type="text" id="team-names" placeholder="Comma separated: Team1,Team2,…Team6">
-    </div>
-    <div class="form-group">
-      <label>Coaches’ Names (Team 1 to Team 6)</label>
-      <input type="text" id="coach-names" placeholder="Comma separated coach names">
-    </div>
-    <div class="form-group">
-      <label>Team Logos (Team 1 to Team 6)</label>
-      <input type="file" id="team-logos" accept="image/*" multiple>
-      <small>Upload images in order: Team1 → Team2 → ... → Team6</small>
-    </div>
-    <div class="form-group">
-      <button id="save-setup">Save Setup</button>
-    </div>
-  </div>
-
-  <!-- ========== Live Drafted Teams Display ========== -->
-  <div class="live-teams-section">
-    <h2>Live Team Rosters</h2>
-    <div class="teams-grid" id="drafted-teams-grid">
-      <!-- Team cards will be rendered here -->
-    </div>
-  </div>
-
-  <script>
-    // Existing auctionState or add if not already
-    const auctionState = {
-      teams: [],      // will hold array of {id, name, coaches, logo, players: []}
-      countdown: 0,
-      nomination: 0,
-      countdownActive: false,
-      nominationActive: false,
-      currentTimer: null
-    };
-
-    // ===== Timer Functions =====
-    function setTimerActive(type, isActive) {
-      const card = document.getElementById(type + '-timer-card');
-      const display = document.getElementById(type + '-timer');
-      if (isActive) {
-        card.classList.remove('inactive');
-        card.classList.add('active');
-        // Timer display will show the remaining time
-      } else {
-        card.classList.remove('active');
-        card.classList.add('inactive');
-        display.textContent = '--';
-      }
-    }
-
-    function startTimer(type, duration) {
-      // Stop any existing timer
-      stopTimer(type);
-      auctionState[type] = duration;
-      auctionState[type + 'Active'] = true;
-      setTimerActive(type, true);
-
-      auctionState.currentTimer = setInterval(() => {
-        if (auctionState[type] > 0) {
-          auctionState[type]--;
-          document.getElementById(type + '-timer').textContent = formatTime(auctionState[type]);
-        } else {
-          stopTimer(type);
-        }
-      }, 1000);
-    }
-
-    function stopTimer(type) {
-      if (auctionState.currentTimer) {
-        clearInterval(auctionState.currentTimer);
-      }
-      auctionState[type + 'Active'] = false;
-      setTimerActive(type, false);
-    }
-
-    function resetTimer(type) {
-      stopTimer(type);
-      document.getElementById(type + '-timer').textContent = '--';
-    }
-
-    function formatTime(seconds) {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-    }
-
-    // Event listeners for timer buttons
-    document.getElementById('start-countdown').addEventListener('click', () => {
-      startTimer('countdown', 300); // example 5 min
-    });
-    document.getElementById('pause-countdown').addEventListener('click', () => {
-      stopTimer('countdown');
-    });
-    document.getElementById('reset-countdown').addEventListener('click', () => {
-      resetTimer('countdown');
-    });
-
-    document.getElementById('start-nomination').addEventListener('click', () => {
-      startTimer('nomination', 120); // example 2 min
-    });
-    document.getElementById('pause-nomination').addEventListener('click', () => {
-      stopTimer('nomination');
-    });
-    document.getElementById('reset-nomination').addEventListener('click', () => {
-      resetTimer('nomination');
-    });
-
-    // ===== Admin Setup: Team Info =====
-    document.getElementById('save-setup').addEventListener('click', saveSetup);
-
-    function saveSetup() {
-      const teamNamesRaw = document.getElementById('team-names').value;
-      const coachNamesRaw = document.getElementById('coach-names').value;
-      const logosInput = document.getElementById('team-logos');
-
-      const teamNames = teamNamesRaw.split(',').map(s => s.trim()).filter(s => s !== '');
-      const coachNames = coachNamesRaw.split(',').map(s => s.trim()).filter(s => s !== '');
-      const files = logosInput.files;
-
-      // Ensure 6 entries
-      for (let i = teamNames.length; i < 6; i++) teamNames.push(`Team ${i+1}`);
-      for (let i = coachNames.length; i < 6; i++) coachNames.push(`Coach ${i+1}`);
-
-      auctionState.teams = [];
-      for (let i = 0; i < 6; i++) {
-        let logoUrl = null;
-        if (files[i]) {
-          logoUrl = URL.createObjectURL(files[i]);
-        }
-        auctionState.teams.push({
-          id: i,
-          name: teamNames[i],
-          coaches: coachNames[i],
-          logo: logoUrl,  
-          players: []
-        });
-      }
-
-      updateLiveDraftedTeams();
-    }
-
-    // ===== Draft / Bidding Function to record picks =====
-    function finalizeBid(teamId, playerName, playerCost) {
-      const team = auctionState.teams.find(t => t.id === teamId);
-      if (!team) return;
-      team.players.push({ name: playerName, cost: playerCost });
-      updateLiveDraftedTeams();
-    }
-
-    // ===== Live Drafted Teams Rendering =====
-    function updateLiveDraftedTeams() {
-      const container = document.getElementById('drafted-teams-grid');
-      container.innerHTML = '';
-
-      auctionState.teams.forEach(team => {
-        const playersHtml = team.players.length
-          ? team.players.map(p => `<li>${p.name} – ₹${p.cost}</li>`).join('')
-          : '<li>No picks yet</li>';
-        const card = document.createElement('div');
-        card.className = 'team-card';
-        card.innerHTML = `
-          <div class="team-header">
-            <div class="team-logo" style="${team.logo ? `background-image: url('${team.logo}');` : ''}">
-              ${!team.logo ? team.name.charAt(0).toUpperCase() : ''}
+        <!-- Current Bid Display -->
+        <div class="current-bid-display">
+            <h2 style="margin-bottom: 20px;">Current Auction</h2>
+            <div class="player-info">
+                <div class="info-card">
+                    <h3>Current Player</h3>
+                    <p id="current-player">-</p>
+                </div>
+                <div class="info-card">
+                    <h3>Nominating Team</h3>
+                    <p id="nominating-team">-</p>
+                </div>
+                <div class="info-card">
+                    <h3>Initial Bid</h3>
+                    <p id="initial-bid">-</p>
+                </div>
+                <div class="info-card">
+                    <h3>Current Bid</h3>
+                    <p id="current-bid" style="color: #ffd93d;">-</p>
+                </div>
+                <div class="info-card">
+                    <h3>Leading Team</h3>
+                    <p id="leading-team">-</p>
+                </div>
             </div>
-            <div class="team-info">
-              <h3>${team.name}</h3>
-              <div class="coaches">${team.coaches}</div>
+        </div>
+
+        <!-- Timers -->
+        <div class="timers-section">
+            <div class="timer-card countdown-timer">
+                <h3>⏰ Bid Countdown</h3>
+                <div class="timer-display" id="countdown-timer">5</div>
+                <p>Last chance to bid!</p>
             </div>
-          </div>
-          <ul>${playersHtml}</ul>
-        `;
-        container.appendChild(card);
-      });
-    }
+            <div class="timer-card nomination-timer">
+                <h3>⏱️ Nomination Timer</h3>
+                <div class="timer-display" id="nomination-timer">1:30</div>
+                <p>Time to nominate</p>
+            </div>
+        </div>
 
-    // You can call updateLiveDraftedTeams() in other places in your flow
-    // E.g. after auction reset, after your renderTeams() if it updates teams, etc.
+        <!-- Nomination Section -->
+        <div class="nomination-section">
+            <h2 style="color: #764ba2; margin-bottom: 15px;">Player Nomination</h2>
+            <div class="nomination-form">
+                <div class="form-group">
+                    <label>Player Name</label>
+                    <input type="text" id="player-name-input" placeholder="Enter player name">
+                </div>
+                <div class="form-group">
+                    <label>Starting Bid (k)</label>
+                    <input type="number" id="starting-bid-input" placeholder="Min: 2k" min="2" step="0.5">
+                </div>
+                <button class="bid-btn" onclick="nominatePlayer()">Nominate</button>
+            </div>
+        </div>
 
-  </script>
+        <!-- Team Bidding Sections -->
+        <div class="teams-grid" id="teams-container">
+            <!-- Teams will be dynamically generated here -->
+        </div>
+
+        <!-- Player Management Section -->
+        <div class="data-section" id="player-management-section">
+            <h2>Player Management</h2>
+            <div style="margin-bottom: 20px;">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: #764ba2; margin-bottom: 5px; display: block;">Add Players (one per line or comma-separated)</label>
+                    <textarea id="player-input" style="width: 100%; min-height: 100px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;" placeholder="Enter player names...
+Example:
+AriJimo
+Daddy
+Nintagofox
+or
+Player1, Player2, Player3"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    <button class="admin-btn" style="background: #28a745;" onclick="addPlayers()">➕ Add Players</button>
+                    <button class="admin-btn" style="background: #dc3545;" onclick="clearPlayerInput()">🗑️ Clear Input</button>
+                    <button class="admin-btn" style="background: #17a2b8;" onclick="loadSamplePlayers()">📋 Load Sample Players</button>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>Total Available Players:</strong> <span id="available-count" style="color: #28a745; font-size: 1.2em;">0</span>
+                    </div>
+                    <div>
+                        <strong>Already Drafted:</strong> <span id="drafted-count" style="color: #dc3545; font-size: 1.2em;">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="player-search" placeholder="🔍 Search players..." style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;" onkeyup="searchPlayers()">
+            </div>
+
+            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px;">
+                <div id="available-players-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                    <!-- Players will be displayed here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Setup (Table) — place above Admin Console -->
+        <div class="data-section" id="team-setup-table-section">
+            <h2>Team Setup (Table)</h2>
+            <p style="margin-bottom:10px;color:#666">Fill all 6 rows. Logos are optional but recommended.</p>
+            <div style="overflow-x:auto;">
+                <table class="data-table" id="team-setup-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Team Name</th>
+                            <th>Coaches' Names</th>
+                            <th>Logo (Upload)</th>
+                            <th>Preview</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 6 rows -->
+                        ${[1,2,3,4,5,6].map(i => `
+                        <tr data-index="${i-1}">
+                            <td>Team ${i}</td>
+                            <td><input type="text" class="team-name-input" placeholder="e.g., Team ${i}" style="width:100%;padding:8px;border:1px solid #e0e0e0;border-radius:6px;"></td>
+                            <td><input type="text" class="coach-name-input" placeholder="e.g., Coach ${i}A & Coach ${i}B" style="width:100%;padding:8px;border:1px solid #e0e0e0;border-radius:6px;"></td>
+                            <td>
+                                <input type="file" accept="image/*" class="logo-input" onchange="onLogoFileChange(this, ${i-1})">
+                            </td>
+                            <td style="min-width:80px;">
+                                <div class="team-logo-preview" id="logo-prev-${i-1}" style="width:60px;height:60px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;color:#999;font-weight:bold;">
+                                    —
+                                </div>
+                            </td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;">
+                <button class="admin-btn start" type="button" onclick="saveTeamSetupFromTable()">💾 Save Teams</button>
+                <button class="admin-btn undo" type="button" onclick="initTeamSetupTable()">↺ Reset Table (from state)</button>
+                <button class="admin-btn reset" type="button" onclick="clearTeamSetupTable()">🧹 Clear Table</button>
+            </div>
+            <small style="display:block;margin-top:8px;color:#777">Tip: You can save teams here anytime before starting the auction. “Reset Table” pulls from current state (if already saved).</small>
+        </div>
+
+
+        <!-- Admin Console -->
+        <div class="admin-console">
+            <h2 style="color: #764ba2; margin-bottom: 15px;">Admin Console</h2>
+            <div class="admin-buttons">
+                <button class="admin-btn start" onclick="startAuction()">▶️ Start Auction</button>
+                <button class="admin-btn pause" onclick="pauseAuction()">⏸️ Pause Auction</button>
+                <button class="admin-btn undo" onclick="undoLastBid()">↩️ Undo Last Bid</button>
+                <button class="admin-btn reset" onclick="resetAuction()">🔄 Reset Auction</button>
+                <button class="admin-btn export" onclick="exportData()">📊 Export to Sheets</button>
+            </div>
+        </div>
+
+        <!-- Bid History -->
+        <div class="data-section">
+            <h2>Bid History</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Player</th>
+                        <th>Team</th>
+                        <th>Bid Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="bid-history">
+                    <!-- Bid history will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Drafted Players -->
+        <div class="data-section">
+            <h2>Drafted Players</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Team</th>
+                        <th>Final Bid</th>
+                    </tr>
+                </thead>
+                <tbody id="drafted-players">
+                    <!-- Drafted players will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="card mb-4">
+        <div class="card-header">Setup Teams</div>
+        <div class="card-body">
+            <form id="setup-form">
+                <div class="mb-3">
+                    <label for="team-names" class="form-label">Team Names</label>
+                    <input type="text" id="team-names" class="form-control" placeholder="Comma-separated team names (e.g. Tigers, Lions, Hawks)">
+                </div>
+
+                <div class="mb-3">
+                    <label for="coach-names" class="form-label">Coach Names</label>
+                    <input type="text" id="coach-names" class="form-control" placeholder="Comma-separated coach names (e.g. John, Mike, Sara)">
+                </div>
+
+                <div class="mb-3">
+                    <label for="team-logos" class="form-label">Team Logos</label>
+                    <input type="file" id="team-logos" class="form-control" accept="image/*" multiple>
+                    <small class="form-text text-muted">Upload 6 logos in the same order as the teams.</small>
+                </div>
+
+                <div class="text-end">
+                    <button type="button" class="btn btn-primary" onclick="saveSetup()">Save Setup</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        // Global State
+        let auctionState = {
+            isActive: false,
+            isPaused: false,
+            currentPlayer: null,
+            nominatingTeam: null,
+            initialBid: 0,
+            currentBid: 0,
+            leadingTeam: null,
+            teams: [],
+            bidHistory: [],
+            draftedPlayers: [],
+            availablePlayers: [],
+            nominationOrder: [],
+            currentNominationIndex: 0,
+            roundNumber: 1
+        };
+
+        // Timer State
+        let countdownTimer = null;
+        let countdownValue = 5;
+        let nominationTimer = null;
+        let nominationValue = 90; // 1:30 in seconds
+        let bidCooldownTimer = null;
+
+        // Initialize Teams
+        function initializeTeams() {
+            const teamNames = ['Team Alpha', 'Team Beta', 'Team Gamma', 'Team Delta', 'Team Epsilon', 'Team Zeta'];
+            const coaches = [
+                'Coach A1 & Coach A2',
+                'Coach B1 & Coach B2', 
+                'Coach C1 & Coach C2',
+                'Coach D1 & Coach D2',
+                'Coach E1 & Coach E2',
+                'Coach Z1 & Coach Z2'
+            ];
+
+            auctionState.teams = teamNames.map((name, index) => ({
+                id: index,
+                name: name,
+                logo: name.charAt(5),
+                coaches: coaches[index],
+                budget: 100,
+                players: [],
+                maxBid: 100
+            }));
+
+            renderTeams();
+        }
+
+        // Render Teams
+        function renderTeams() {
+            const container = document.getElementById('teams-container');
+            container.innerHTML = '';
+
+            auctionState.teams.forEach(team => {
+                const teamCard = document.createElement('div');
+                teamCard.className = 'team-card';
+                teamCard.id = `team-${team.id}`;
+                
+                teamCard.innerHTML = `
+                    <div class="team-header">
+                        <div class="team-logo">${team.logo}</div>
+                        <div class="team-info">
+                            <h3>${team.name}</h3>
+                            <div class="coaches">${team.coaches}</div>
+                        </div>
+                    </div>
+                    <div class="budget-display">
+                        <div>Remaining Budget</div>
+                        <div class="budget-amount">₹${team.budget}k</div>
+                        <div style="font-size: 0.9em; color: #666;">Max Bid: ₹${calculateMaxBid(team)}k</div>
+                    </div>
+                    <div class="bid-buttons">
+                        <button class="bid-btn" onclick="placeBid(${team.id}, 0.5)">+0.5k</button>
+                        <button class="bid-btn" onclick="placeBid(${team.id}, 1)">+1k</button>
+                        <button class="bid-btn" onclick="placeBid(${team.id}, 2)">+2k</button>
+                        <button class="bid-btn" onclick="placeBid(${team.id}, 5)">+5k</button>
+                        <button class="bid-btn" onclick="placeBid(${team.id}, 10)">+10k</button>
+                        <button class="bid-btn max-bid" onclick="placeMaxBid(${team.id})">MAX BID</button>
+                    </div>
+                    <div class="custom-bid-container">
+                        <input type="number" class="custom-bid-input" id="custom-bid-${team.id}" placeholder="Custom bid (k)" step="0.5">
+                        <button class="bid-btn" onclick="placeCustomBid(${team.id})">Place Custom</button>
+                    </div>
+                `;
+                
+                container.appendChild(teamCard);
+            });
+        }
+
+        // Calculate Maximum Bid
+        function calculateMaxBid(team) {
+            const playersNeeded = 6 - team.players.length;
+            const reserveBudget = Math.max(0, (playersNeeded - 1) * 2);
+            return Math.max(2, team.budget - reserveBudget);
+        }
+
+        // Place Bid
+        function placeBid(teamId, increment) {
+            if (!auctionState.isActive || auctionState.isPaused || !auctionState.currentPlayer) {
+                alert('No active auction or auction is paused!');
+                return;
+            }
+
+            const team = auctionState.teams[teamId];
+            const newBid = auctionState.currentBid + increment;
+            const maxBid = calculateMaxBid(team);
+
+            if (newBid > maxBid) {
+                alert(`Bid exceeds maximum allowed bid of ₹${maxBid}k for ${team.name}`);
+                return;
+            }
+
+            if (newBid > team.budget) {
+                alert(`Insufficient budget! ${team.name} has ₹${team.budget}k remaining`);
+                return;
+            }
+
+            updateBid(teamId, newBid);
+        }
+
+        // Place Max Bid
+        function placeMaxBid(teamId) {
+            if (!auctionState.isActive || auctionState.isPaused || !auctionState.currentPlayer) {
+                alert('No active auction or auction is paused!');
+                return;
+            }
+
+            const team = auctionState.teams[teamId];
+            const maxBid = calculateMaxBid(team);
+
+            if (maxBid <= auctionState.currentBid) {
+                alert(`Maximum bid of ₹${maxBid}k is not higher than current bid`);
+                return;
+            }
+
+            updateBid(teamId, maxBid);
+        }
+
+        // Place Custom Bid
+        function placeCustomBid(teamId) {
+            if (!auctionState.isActive || auctionState.isPaused || !auctionState.currentPlayer) {
+                alert('No active auction or auction is paused!');
+                return;
+            }
+
+            const customInput = document.getElementById(`custom-bid-${teamId}`);
+            const customBid = parseFloat(customInput.value);
+
+            if (!customBid || customBid <= 0) {
+                alert('Please enter a valid bid amount');
+                return;
+            }
+
+            if (customBid % 0.5 !== 0) {
+                alert('Bid must be in increments of 0.5k');
+                return;
+            }
+
+            const team = auctionState.teams[teamId];
+            const maxBid = calculateMaxBid(team);
+
+            if (customBid > maxBid) {
+                alert(`Bid exceeds maximum allowed bid of ₹${maxBid}k for ${team.name}`);
+                return;
+            }
+
+            if (customBid <= auctionState.currentBid) {
+                alert('Custom bid must be higher than current bid');
+                return;
+            }
+
+            updateBid(teamId, customBid);
+            customInput.value = '';
+        }
+
+        // Update Bid
+        function updateBid(teamId, newBid) {
+            const team = auctionState.teams[teamId];
+            
+            // Update auction state
+            auctionState.currentBid = newBid;
+            auctionState.leadingTeam = team.name;
+
+            // Add to bid history
+            const bidEntry = {
+                timestamp: new Date().toLocaleTimeString(),
+                player: auctionState.currentPlayer,
+                team: team.name,
+                amount: newBid
+            };
+            auctionState.bidHistory.push(bidEntry);
+
+            // Update display
+            document.getElementById('current-bid').textContent = `₹${newBid}k`;
+            document.getElementById('leading-team').textContent = team.name;
+
+            // Highlight the bidding team
+            document.querySelectorAll('.team-card').forEach(card => {
+                card.classList.remove('highlight-bid');
+            });
+            document.getElementById(`team-${teamId}`).classList.add('highlight-bid');
+
+            // Update bid history table
+            updateBidHistoryTable();
+
+            // Reset countdown timer
+            resetCountdownTimer();
+        }
+
+        // Reset + (re)start the 5s bid countdown with a 20s grey cooldown
+        function resetCountdownTimer() {
+            // Clear existing timers
+            if (countdownTimer) clearInterval(countdownTimer);
+            if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
+
+            // Show as INACTIVE (grey) with '--' during cooldown instead of hiding
+            setTimerInactive('countdown');
+
+            // Start 20s cooldown (still inactive/--)
+            bidCooldownTimer = setTimeout(() => {
+                // Switch to ACTIVE (red) and start ticking
+                setTimerActive('countdown');
+
+                countdownValue = 5; // seconds
+                document.getElementById('countdown-timer').textContent = countdownValue;
+
+                countdownTimer = setInterval(() => {
+                    document.getElementById('countdown-timer').textContent = countdownValue;
+
+                    if (countdownValue <= 0) {
+                        clearInterval(countdownTimer);
+                        // After finish, immediately set back to inactive visual
+                        setTimerInactive('countdown');
+                        finalizeBid();
+                    }
+
+                    countdownValue--;
+                }, 1000);
+            }, 10000); // 10s delay
+        }
+
+        // Finalize Bid
+        function finalizeBid() {
+            if (!auctionState.currentPlayer) return;
+
+            const winningTeam = auctionState.teams.find(t => t.name === auctionState.leadingTeam);
+            
+            // Update team budget and add player
+            winningTeam.budget -= auctionState.currentBid;
+            winningTeam.players.push({
+                name: auctionState.currentPlayer,
+                cost: auctionState.currentBid
+            });
+
+            // Add to drafted players
+            auctionState.draftedPlayers.push({
+                player: auctionState.currentPlayer,
+                team: winningTeam.name,
+                finalBid: auctionState.currentBid
+            });
+
+            // Remove from available players
+            const playerIndex = auctionState.availablePlayers.indexOf(auctionState.currentPlayer);
+            if (playerIndex > -1) {
+                auctionState.availablePlayers.splice(playerIndex, 1);
+            }
+
+            // Update drafted players table
+            updateDraftedPlayersTable();
+
+            // Reset auction state
+            resetCurrentAuction();
+
+            // Update team displays
+            renderTeams();
+
+            // Move to next nomination
+            moveToNextNomination();
+
+            alert(`${auctionState.currentPlayer} sold to ${winningTeam.name} for ₹${auctionState.currentBid}k!`);
+        }
+
+        // Reset Current Auction
+        function resetCurrentAuction() {
+            auctionState.currentPlayer = null;
+            auctionState.nominatingTeam = null;
+            auctionState.initialBid = 0;
+            auctionState.currentBid = 0;
+            auctionState.leadingTeam = null;
+
+            // Clear displays
+            document.getElementById('current-player').textContent = '-';
+            document.getElementById('nominating-team').textContent = '-';
+            document.getElementById('initial-bid').textContent = '-';
+            document.getElementById('current-bid').textContent = '-';
+            document.getElementById('leading-team').textContent = '-';
+
+            // Clear timers and show as INACTIVE + '--'
+            if (countdownTimer) clearInterval(countdownTimer);
+            if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
+            if (nominationTimer) clearInterval(nominationTimer);
+
+            setTimerInactive('countdown');
+            setTimerInactive('nomination');
+        }
+
+        // Move to Next Nomination
+        function moveToNextNomination() {
+            auctionState.currentNominationIndex++;
+            if (auctionState.currentNominationIndex >= auctionState.nominationOrder.length) {
+                auctionState.currentNominationIndex = 0;
+                auctionState.roundNumber++;
+                alert(`Round ${auctionState.roundNumber} starting!`);
+            }
+
+            startNominationTimer();
+        }
+
+        // === Timer visual helpers ===
+        function setTimerActive(which) {
+            const card = document.querySelector(which === 'countdown' ? '.countdown-timer' : '.nomination-timer');
+            const disp = document.getElementById(which === 'countdown' ? 'countdown-timer' : 'nomination-timer');
+            if (!card || !disp) return;
+            card.classList.add('timer-active');
+            card.classList.remove('timer-inactive');
+        }
+
+        function setTimerInactive(which) {
+            const card = document.querySelector(which === 'countdown' ? '.countdown-timer' : '.nomination-timer');
+            const disp = document.getElementById(which === 'countdown' ? 'countdown-timer' : 'nomination-timer');
+            if (!card || !disp) return;
+            card.classList.remove('timer-active');
+            card.classList.add('timer-inactive');
+            disp.textContent = '--';
+        }
+
+
+        // Start Nomination Timer
+        function startNominationTimer() {
+            if (nominationTimer) clearInterval(nominationTimer);
+
+            // Start active (red)
+            setTimerActive('nomination');
+
+            nominationValue = 90; // 1:30
+            const el = document.getElementById('nomination-timer');
+
+            nominationTimer = setInterval(() => {
+                const minutes = Math.floor(nominationValue / 60);
+                const seconds = nominationValue % 60;
+                el.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (nominationValue <= 0) {
+                    clearInterval(nominationTimer);
+                    alert('Nomination time expired!');
+                    // Back to inactive (grey + --)
+                    setTimerInactive('nomination');
+                    autoNominate();
+                }   
+
+                nominationValue--;
+            }, 1000);
+
+            // Update nomination section with current team (kept from your original)
+            const currentTeamIndex = auctionState.nominationOrder[auctionState.currentNominationIndex];
+            const currentTeam = auctionState.teams[currentTeamIndex];
+            document.querySelector('.nomination-section h2').textContent =
+                `Player Nomination - ${currentTeam.name}'s Turn`;
+        }
+
+
+        // Auto Nominate
+        function autoNominate() {
+            if (auctionState.availablePlayers.length === 0) {
+                alert('No more players available!');
+                return;
+            }
+
+            const randomPlayer = auctionState.availablePlayers[
+                Math.floor(Math.random() * auctionState.availablePlayers.length)
+            ];
+            
+            document.getElementById('player-name-input').value = randomPlayer;
+            document.getElementById('starting-bid-input').value = 2;
+            nominatePlayer();
+        }
+
+        // Nominate Player
+        function nominatePlayer() {
+            if (!auctionState.isActive || auctionState.isPaused) {
+                alert('Auction is not active or is paused!');
+                return;
+            }
+
+            const playerName = document.getElementById('player-name-input').value.trim();
+            const startingBid = parseFloat(document.getElementById('starting-bid-input').value);
+
+            if (!playerName) {
+                alert('Please enter a player name');
+                return;
+            }
+
+            if (!auctionState.availablePlayers.includes(playerName)) {
+                alert('Player not in available players list or already drafted!');
+                return;
+            }
+
+            if (!startingBid || startingBid < 2) {
+                alert('Starting bid must be at least 2k');
+                return;
+            }
+
+            if (startingBid % 0.5 !== 0) {
+                alert('Bid must be in increments of 0.5k');
+                return;
+            }
+
+            const currentTeamIndex = auctionState.nominationOrder[auctionState.currentNominationIndex];
+            const nominatingTeam = auctionState.teams[currentTeamIndex];
+
+            // Set auction state
+            auctionState.currentPlayer = playerName;
+            auctionState.nominatingTeam = nominatingTeam.name;
+            auctionState.initialBid = startingBid;
+            auctionState.currentBid = startingBid;
+            auctionState.leadingTeam = nominatingTeam.name;
+
+            // Update displays
+            document.getElementById('current-player').textContent = playerName;
+            document.getElementById('nominating-team').textContent = nominatingTeam.name;
+            document.getElementById('initial-bid').textContent = `₹${startingBid}k`;
+            document.getElementById('current-bid').textContent = `₹${startingBid}k`;
+            document.getElementById('leading-team').textContent = nominatingTeam.name;
+
+            // Add to bid history
+            auctionState.bidHistory.push({
+                timestamp: new Date().toLocaleTimeString(),
+                player: playerName,
+                team: nominatingTeam.name,
+                amount: startingBid
+            });
+            updateBidHistoryTable();
+
+            // Clear nomination inputs
+            document.getElementById('player-name-input').value = '';
+            document.getElementById('starting-bid-input').value = '';
+
+            // Clear nomination timer
+            if (nominationTimer) clearInterval(nominationTimer);
+
+            // Start bid countdown process
+            resetCountdownTimer();
+        }
+
+        // Update Bid History Table
+        function updateBidHistoryTable() {
+            const tbody = document.getElementById('bid-history');
+            tbody.innerHTML = '';
+
+            // Show last 10 bids
+            const recentBids = auctionState.bidHistory.slice(-10).reverse();
+            
+            recentBids.forEach(bid => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${bid.timestamp}</td>
+                    <td>${bid.player}</td>
+                    <td>${bid.team}</td>
+                    <td>₹${bid.amount}k</td>
+                `;
+            });
+        }
+
+        // Update Drafted Players Table
+        function updateDraftedPlayersTable() {
+            const tbody = document.getElementById('drafted-players');
+            tbody.innerHTML = '';
+
+            auctionState.draftedPlayers.forEach(draft => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${draft.player}</td>
+                    <td>${draft.team}</td>
+                    <td>₹${draft.finalBid}k</td>
+                `;
+            });
+        }
+
+        // Admin Functions
+        function startAuction() {
+            if (auctionState.isActive && !auctionState.isPaused) {
+                alert('Auction is already active!');
+                return;
+            }
+
+            // Check if players are added
+            if (auctionState.availablePlayers.length === 0) {
+                alert('Please add players before starting the auction!');
+                return;
+            }
+
+            // If no teams yet, try to read from the in-app table first
+            if (auctionState.teams.length === 0) {
+                const ok = saveTeamSetupFromTable({ silent: true });
+                if (!ok) {
+                    alert('Please fill the Team Setup (Table) above and click “Save Teams” before starting the auction.');
+                    return;
+                }
+            }
+
+
+            auctionState.isActive = true;
+            auctionState.isPaused = false;
+
+            // Enable all team bid buttons
+            document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
+                btn.disabled = false;
+            });
+            
+            // Enable nomination button
+            const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+            if (nominateBtn) {
+                nominateBtn.disabled = false;
+            }
+
+            // Start nomination timer for first team
+            if (!auctionState.currentPlayer) {
+                startNominationTimer();
+            }
+
+            alert('Auction started!');
+        }
+
+        function pauseAuction() {
+            if (!auctionState.isActive) {
+                alert('No active auction to pause!');
+                return;
+            }
+
+            auctionState.isPaused = !auctionState.isPaused;
+
+            if (auctionState.isPaused) {
+                // Pause all timers
+                if (countdownTimer) clearInterval(countdownTimer);
+                if (nominationTimer) clearInterval(nominationTimer);
+                if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
+
+                // Disable all team bid buttons
+                document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
+                    btn.disabled = true;
+                });
+                
+                // Disable nomination button
+                const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+                if (nominateBtn) {
+                    nominateBtn.disabled = true;
+                }
+
+                // show both timers as inactive when paused
+                setTimerInactive('countdown');
+                setTimerInactive('nomination');
+
+                alert('Auction paused!');
+            } else {
+                // Resume timers
+                if (auctionState.currentPlayer) {
+                    // bid phase -> countdown goes active (resetCountdownTimer() will handle visuals too)
+                    setTimerActive('countdown');
+                } else {
+                    // nomination phase -> nomination timer goes active
+                    setTimerActive('nomination');
+                }
+
+                // Enable all team bid buttons
+                document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
+                    btn.disabled = false;
+                });
+                
+                // Enable nomination button
+                const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+                if (nominateBtn) {
+                    nominateBtn.disabled = false;
+                }
+
+                alert('Auction resumed!');
+            }
+        }
+
+        function undoLastBid() {
+            if (auctionState.bidHistory.length <= 1) {
+                alert('No bid to undo!');
+                return;
+            }
+
+            // Remove last bid
+            auctionState.bidHistory.pop();
+
+            // Get previous bid
+            const previousBid = auctionState.bidHistory[auctionState.bidHistory.length - 1];
+            
+            if (previousBid) {
+                auctionState.currentBid = previousBid.amount;
+                auctionState.leadingTeam = previousBid.team;
+
+                // Update displays
+                document.getElementById('current-bid').textContent = `₹${previousBid.amount}k`;
+                document.getElementById('leading-team').textContent = previousBid.team;
+
+                // Update bid history table
+                updateBidHistoryTable();
+
+                // Reset countdown
+                resetCountdownTimer();
+
+                alert('Last bid undone!');
+            }
+        }
+
+        function resetAuction() {
+            if (!confirm('Are you sure you want to reset the entire auction? This will clear all data!')) {
+                return;
+            }
+
+            // Clear all timers
+            if (countdownTimer) clearInterval(countdownTimer);
+            if (nominationTimer) clearInterval(nominationTimer);
+            if (bidCooldownTimer) clearTimeout(bidCooldownTimer);
+
+            // Reset state
+            auctionState = {
+                isActive: false,
+                isPaused: false,
+                currentPlayer: null,
+                nominatingTeam: null,
+                initialBid: 0,
+                currentBid: 0,
+                leadingTeam: null,
+                teams: [],
+                bidHistory: [],
+                draftedPlayers: [],
+                availablePlayers: [],
+                nominationOrder: [],
+                currentNominationIndex: 0,
+                roundNumber: 1
+            };
+
+            // Clear displays
+            resetCurrentAuction();
+            document.getElementById('bid-history').innerHTML = '';
+            document.getElementById('drafted-players').innerHTML = '';
+            document.getElementById('teams-container').innerHTML = '';
+
+            // Re-initialize
+            initializeTeams();
+            auctionState.nominationOrder = [0, 1, 2, 3, 4, 5];
+            displayAvailablePlayers();
+
+            // Disable only team bid buttons and nomination button
+            document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+            if (nominateBtn) {
+                nominateBtn.disabled = true;
+            }
+
+            alert('Auction reset! Please add players and start again.');
+        }
+
+        function exportData() {
+            // Prepare data for export
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                round: auctionState.roundNumber,
+                teams: auctionState.teams.map(team => ({
+                    name: team.name,
+                    budget: team.budget,
+                    players: team.players
+                })),
+                draftedPlayers: auctionState.draftedPlayers,
+                bidHistory: auctionState.bidHistory
+            };
+
+            // Convert to CSV format
+            let csvContent = "Auction Data Export\n";
+            csvContent += `Date: ${new Date().toLocaleDateString()}\n`;
+            csvContent += `Round: ${auctionState.roundNumber}\n\n`;
+
+            // Team Summary
+            csvContent += "TEAM SUMMARY\n";
+            csvContent += "Team,Remaining Budget,Players Drafted,Total Spent\n";
+            auctionState.teams.forEach(team => {
+                const totalSpent = 100 - team.budget;
+                csvContent += `${team.name},${team.budget}k,${team.players.length},${totalSpent}k\n`;
+            });
+
+            csvContent += "\nDRAFTED PLAYERS\n";
+            csvContent += "Player,Team,Final Bid\n";
+            auctionState.draftedPlayers.forEach(draft => {
+                csvContent += `${draft.player},${draft.team},${draft.finalBid}k\n`;
+            });
+
+            csvContent += "\nBID HISTORY\n";
+            csvContent += "Timestamp,Player,Team,Bid Amount\n";
+            auctionState.bidHistory.forEach(bid => {
+                csvContent += `${bid.timestamp},${bid.player},${bid.team},${bid.amount}k\n`;
+            });
+
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `auction_data_round_${auctionState.roundNumber}_${Date.now()}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            alert('Data exported! Check your downloads folder.');
+
+            // Note: For actual Google Sheets integration, you would need to implement
+            // Google Sheets API with proper authentication
+            console.log('For Google Sheets integration, implement API connection here');
+        }
+
+        // Setup Functions
+        function saveSetup() {
+            const teamNames = document.getElementById('team-names').value.split(',').map(t => t.trim());
+            const coachNames = document.getElementById('coach-names').value.split(',').map(c => c.trim());
+            const players = document.getElementById('available-players').value.split(',').map(p => p.trim());
+            const order = document.getElementById('nomination-order').value.split(',').map(o => parseInt(o.trim()));
+
+            if (teamNames.length !== 6 || coachNames.length !== 6) {
+                alert('Please enter exactly 6 teams and 6 sets of coaches');
+                return;
+            }
+
+            // Initialize teams with custom data
+            auctionState.teams = teamNames.map((name, index) => ({
+                id: index,
+                name: name,
+                logo: name.charAt(0),
+                coaches: coachNames[index],
+                budget: 100,
+                players: [],
+                maxBid: 100
+            }));
+
+            auctionState.availablePlayers = players;
+            auctionState.nominationOrder = order;
+
+            renderTeams();
+            closeSetup();
+            startAuction();
+        }
+
+        function closeSetup() {
+            document.getElementById('setup-modal').classList.remove('active');
+        }
+
+        // Player Management Functions
+        function addPlayers() {
+            const input = document.getElementById('player-input').value.trim();
+            if (!input) {
+                alert('Please enter player names');
+                return;
+            }
+
+            // Parse input - support both comma-separated and line-separated
+            let newPlayers = [];
+            if (input.includes(',')) {
+                newPlayers = input.split(',').map(p => p.trim()).filter(p => p);
+            } else {
+                newPlayers = input.split('\n').map(p => p.trim()).filter(p => p);
+            }
+
+            // Remove duplicates and already existing players
+            const uniquePlayers = [...new Set(newPlayers)];
+            const addedPlayers = [];
+            const duplicates = [];
+
+            uniquePlayers.forEach(player => {
+                if (!auctionState.availablePlayers.includes(player) && 
+                    !auctionState.draftedPlayers.some(dp => dp.player === player)) {
+                    auctionState.availablePlayers.push(player);
+                    addedPlayers.push(player);
+                } else {
+                    duplicates.push(player);
+                }
+            });
+
+            // Clear input
+            document.getElementById('player-input').value = '';
+
+            // Update display
+            displayAvailablePlayers();
+
+            // Show result
+            let message = '';
+            if (addedPlayers.length > 0) {
+                message += `Added ${addedPlayers.length} players successfully!\n`;
+            }
+            if (duplicates.length > 0) {
+                message += `Skipped ${duplicates.length} duplicate/drafted players.`;
+            }
+            if (message) {
+                alert(message);
+            }
+        }
+
+        function clearPlayerInput() {
+            document.getElementById('player-input').value = '';
+        }
+
+        function loadSamplePlayers() {
+            const samplePlayers = [
+                'Arijimo', 'ShadedEel', 'Lambo', 'Daddy', 'Nintagofoxo', 'Kingrock', 'Polo', 'Rick', 'KJ', 
+                'Bubba', 'Grum', 'Papi', 'Ark', 'Ahealy', 'Silvestron', 'Clay', 'Wrillix'
+            ];
+
+            document.getElementById('player-input').value = samplePlayers.join('\n');
+        }
+
+        function displayAvailablePlayers() {
+            const container = document.getElementById('available-players-list');
+            const availableCount = document.getElementById('available-count');
+            const draftedCount = document.getElementById('drafted-count');
+
+            // Update counts
+            availableCount.textContent = auctionState.availablePlayers.length;
+            draftedCount.textContent = auctionState.draftedPlayers.length;
+
+            // Clear container
+            container.innerHTML = '';
+
+            // Get search term
+            const searchTerm = document.getElementById('player-search').value.toLowerCase();
+
+            // Filter and display players
+            const filteredPlayers = auctionState.availablePlayers.filter(player => 
+                player.toLowerCase().includes(searchTerm)
+            );
+
+            if (filteredPlayers.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No players available. Add players above to get started!</div>';
+                return;
+            }
+
+            filteredPlayers.sort().forEach(player => {
+                const playerTag = document.createElement('div');
+                playerTag.className = 'player-tag';
+                playerTag.innerHTML = `
+                    <span>${player}</span>
+                    <span class="remove-player" onclick="removePlayer('${player.replace(/'/g, "\\'")}')" title="Remove player">✕</span>
+                `;
+                container.appendChild(playerTag);
+            });
+        }
+
+        function removePlayer(playerName) {
+            if (!confirm(`Remove ${playerName} from available players?`)) {
+                return;
+            }
+
+            const index = auctionState.availablePlayers.indexOf(playerName);
+            if (index > -1) {
+                auctionState.availablePlayers.splice(index, 1);
+                displayAvailablePlayers();
+            }
+        }
+
+        function searchPlayers() {
+            displayAvailablePlayers();
+        }
+
+        // Update the existing nominatePlayer function to validate against available players
+        function nominatePlayer() {
+            if (!auctionState.isActive || auctionState.isPaused) {
+                alert('Auction is not active or is paused!');
+                return;
+            }
+
+            const playerName = document.getElementById('player-name-input').value.trim();
+            const startingBid = parseFloat(document.getElementById('starting-bid-input').value);
+
+            if (!playerName) {
+                alert('Please enter a player name');
+                return;
+            }
+
+            if (!auctionState.availablePlayers.includes(playerName)) {
+                alert('Player not in available players list or already drafted! Please check the available players list below.');
+                return;
+            }
+
+            if (!startingBid || startingBid < 2) {
+                alert('Starting bid must be at least 2k');
+                return;
+            }
+
+            if (startingBid % 0.5 !== 0) {
+                alert('Bid must be in increments of 0.5k');
+                return;
+            }
+
+            const currentTeamIndex = auctionState.nominationOrder[auctionState.currentNominationIndex];
+            const nominatingTeam = auctionState.teams[currentTeamIndex];
+
+            // Set auction state
+            auctionState.currentPlayer = playerName;
+            auctionState.nominatingTeam = nominatingTeam.name;
+            auctionState.initialBid = startingBid;
+            auctionState.currentBid = startingBid;
+            auctionState.leadingTeam = nominatingTeam.name;
+
+            // Update displays
+            document.getElementById('current-player').textContent = playerName;
+            document.getElementById('nominating-team').textContent = nominatingTeam.name;
+            document.getElementById('initial-bid').textContent = `₹${startingBid}k`;
+            document.getElementById('current-bid').textContent = `₹${startingBid}k`;
+            document.getElementById('leading-team').textContent = nominatingTeam.name;
+
+            // Add to bid history
+            auctionState.bidHistory.push({
+                timestamp: new Date().toLocaleTimeString(),
+                player: playerName,
+                team: nominatingTeam.name,
+                amount: startingBid
+            });
+            updateBidHistoryTable();
+
+            // Clear nomination inputs
+            document.getElementById('player-name-input').value = '';
+            document.getElementById('starting-bid-input').value = '';
+
+            // Clear nomination timer
+            if (nominationTimer) clearInterval(nominationTimer);
+
+            // Start bid countdown process
+            resetCountdownTimer();
+        }
+
+        // Update finalizeBid to remove player from available list and update display
+        function finalizeBid() {
+            if (!auctionState.currentPlayer) return;
+
+            const winningTeam = auctionState.teams.find(t => t.name === auctionState.leadingTeam);
+            const playerName = auctionState.currentPlayer;
+            
+            // Update team budget and add player
+            winningTeam.budget -= auctionState.currentBid;
+            winningTeam.players.push({
+                name: playerName,
+                cost: auctionState.currentBid
+            });
+
+            // Add to drafted players
+            auctionState.draftedPlayers.push({
+                player: playerName,
+                team: winningTeam.name,
+                finalBid: auctionState.currentBid
+            });
+
+            // Remove from available players
+            const playerIndex = auctionState.availablePlayers.indexOf(playerName);
+            if (playerIndex > -1) {
+                auctionState.availablePlayers.splice(playerIndex, 1);
+            }
+
+            // Update displays
+            updateDraftedPlayersTable();
+            displayAvailablePlayers();
+
+            // Show alert before reset
+            alert(`${playerName} sold to ${winningTeam.name} for ₹${auctionState.currentBid}k!`);
+
+            // Reset auction state
+            resetCurrentAuction();
+
+            // Update team displays
+            renderTeams();
+
+            // Move to next nomination
+            moveToNextNomination();
+        }
+
+        // Add autocomplete functionality for player nomination
+        function setupPlayerAutocomplete() {
+            const playerInput = document.getElementById('player-name-input');
+            
+            playerInput.addEventListener('input', function() {
+                const value = this.value.toLowerCase();
+                if (value.length < 2) return;
+
+                const matches = auctionState.availablePlayers.filter(player =>
+                    player.toLowerCase().includes(value)
+                ).slice(0, 5);
+
+                // You can implement a dropdown here for autocomplete suggestions
+                // For now, we'll use the browser's datalist
+                let datalist = document.getElementById('player-suggestions');
+                if (!datalist) {
+                    datalist = document.createElement('datalist');
+                    datalist.id = 'player-suggestions';
+                    document.body.appendChild(datalist);
+                    playerInput.setAttribute('list', 'player-suggestions');
+                }
+
+                datalist.innerHTML = '';
+                matches.forEach(player => {
+                    const option = document.createElement('option');
+                    option.value = player;
+                    datalist.appendChild(option);
+                });
+            });
+        }
+
+        // ===== Team Setup (Table) Helpers =====
+        const _teamLogoObjectURLs = new Array(6).fill(null);
+
+        function onLogoFileChange(inputEl, index) {
+            const file = inputEl.files && inputEl.files[0];
+            const prev = document.getElementById(`logo-prev-${index}`);
+            if (!prev) return;
+
+            // Revoke previous object URL (avoid memory leaks)
+            if (_teamLogoObjectURLs[index]) {
+                URL.revokeObjectURL(_teamLogoObjectURLs[index]);
+                _teamLogoObjectURLs[index] = null;
+            }
+
+            if (file) {
+                const url = URL.createObjectURL(file);
+                _teamLogoObjectURLs[index] = url;
+                prev.style.backgroundImage = `url('${url}')`;
+                prev.textContent = '';
+            } else {
+                prev.style.backgroundImage = 'none';
+                prev.textContent = '—';
+            }
+        }
+
+        function clearTeamSetupTable() {
+            const rows = document.querySelectorAll('#team-setup-table tbody tr');
+            rows.forEach((tr, i) => {
+                tr.querySelector('.team-name-input').value = '';
+                tr.querySelector('.coach-name-input').value = '';
+                const fileInput = tr.querySelector('.logo-input');
+                if (fileInput) fileInput.value = '';
+                const prev = document.getElementById(`logo-prev-${i}`);
+                if (prev) {
+                    prev.style.backgroundImage = 'none';
+                    prev.textContent = '—';
+                }
+                if (_teamLogoObjectURLs[i]) {
+                    URL.revokeObjectURL(_teamLogoObjectURLs[i]);
+                    _teamLogoObjectURLs[i] = null;
+                }
+            });
+        }
+
+        function initTeamSetupTable() {
+            // Prefill from state if teams exist; otherwise leave placeholders
+            const rows = document.querySelectorAll('#team-setup-table tbody tr');
+            if (!rows.length) return;
+
+            rows.forEach((tr, i) => {
+                const team = auctionState.teams[i];
+                const nameInput = tr.querySelector('.team-name-input');
+                const coachInput = tr.querySelector('.coach-name-input');
+                const prev = document.getElementById(`logo-prev-${i}`);
+                const fileInput = tr.querySelector('.logo-input');
+
+                if (team) {
+                    nameInput.value = team.name || '';
+                    coachInput.value = team.coaches || '';
+                    fileInput.value = ''; // cannot programmatically set files for security reasons
+
+                    // Preview logo if it's a URL (from previous save) or single letter fallback
+                    if (team.logo && typeof team.logo === 'string' && team.logo.startsWith('blob:')) {
+                        // We can't reconstruct original File, but we can still show preview
+                        prev.style.backgroundImage = `url('${team.logo}')`;
+                        prev.textContent = '';
+                    } else if (team.logo && team.logo.length === 1) {
+                        prev.style.backgroundImage = 'none';
+                        prev.textContent = team.logo.toUpperCase();
+                    } else if (team.logo) {
+                        prev.style.backgroundImage = `url('${team.logo}')`;
+                        prev.textContent = '';
+                    } else {
+                        prev.style.backgroundImage = 'none';
+                        prev.textContent = '—';
+                    }
+                } else {
+                    nameInput.value = '';
+                    coachInput.value = '';
+                    if (prev) { prev.style.backgroundImage = 'none'; prev.textContent = '—'; }
+                    if (fileInput) fileInput.value = '';
+                }
+            });
+        }
+
+        function saveTeamSetupFromTable(opts = { silent: false }) {
+            const rows = document.querySelectorAll('#team-setup-table tbody tr');
+            if (rows.length !== 6) {
+                alert('Please keep exactly 6 rows in the team setup table.');
+                return false;
+            }
+
+            const teams = [];
+            for (let i = 0; i < 6; i++) {
+                const tr = rows[i];
+                const name = tr.querySelector('.team-name-input')?.value.trim() || '';
+                const coaches = tr.querySelector('.coach-name-input')?.value.trim() || '';
+                const logoFile = tr.querySelector('.logo-input')?.files?.[0] || null;
+
+                if (!name) { alert(`Team ${i+1}: Please enter team name`); return false; }
+                if (!coaches) { alert(`Team ${i+1}: Please enter coaches' names`); return false; }
+
+                let logo = null;
+                if (logoFile) {
+                    // If user uploaded new, create URL + preview already handled
+                    logo = _teamLogoObjectURLs[i] || URL.createObjectURL(logoFile);
+                    _teamLogoObjectURLs[i] = logo; // cache
+                } else {
+                    // Try to keep whatever preview exists or fallback to initial
+                    const prev = document.getElementById(`logo-prev-${i}`);
+                    const bg = prev ? prev.style.backgroundImage : '';
+                    if (bg && bg !== 'none') {
+                        // extract url("...") value
+                        const match = bg.match(/url\\(["']?(.*?)["']?\\)/);
+                        logo = match && match[1] ? match[1] : name.charAt(0).toUpperCase();
+                    } else {
+                        logo = name.charAt(0).toUpperCase();
+                    }
+                }
+
+                teams.push({
+                    id: i,
+                    name,
+                    coaches,
+                    logo,
+                    players: auctionState.teams?.[i]?.players || [],
+                    budget: typeof auctionState.teams?.[i]?.budget === 'number' ? auctionState.teams[i].budget : 100,
+                    maxBid: typeof auctionState.teams?.[i]?.maxBid === 'number' ? auctionState.teams[i].maxBid : 100
+                });
+            }
+
+            auctionState.teams = teams;
+            renderTeams();
+            if (typeof updateLiveDraftedTeams === 'function') updateLiveDraftedTeams();
+
+            if (!opts.silent) alert('Teams saved from table!');
+            return true;
+        }
+
+
+        // Initialize on load
+        window.onload = function() {
+            initializeTeams();
+            
+            // Set initial available players - empty by default
+            auctionState.availablePlayers = [];
+
+            // Set default nomination order (snake: 0,1,2,3,4,5)
+            auctionState.nominationOrder = [0, 1, 2, 3, 4, 5];
+
+            // Disable ONLY bid buttons initially - not admin or player management buttons
+            document.querySelectorAll('.team-card .bid-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            // Also disable nomination button initially
+            const nominateBtn = document.querySelector('.nomination-form .bid-btn');
+            if (nominateBtn) {
+                nominateBtn.disabled = true;
+            }
+
+            // Display empty player list
+            displayAvailablePlayers();
+
+            // Setup autocomplete
+            setupPlayerAutocomplete();
+
+            //Initialize the team setup table (prefill from current state if any)
+            initTeamSetupTable();
+        };
+    </script>
 </body>
 </html>
