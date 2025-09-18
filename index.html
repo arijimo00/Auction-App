@@ -535,6 +535,121 @@
             background: rgba(255, 255, 255, 0.4);
         }
 
+        /* Team Roster Cards */
+        .roster-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .roster-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .roster-logo {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-right: 12px;
+            overflow: hidden;
+        }
+
+        .roster-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .roster-info {
+            flex-grow: 1;
+        }
+
+        .roster-info h4 {
+            margin: 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .roster-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .roster-players {
+            min-height: 100px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .roster-player {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+        }
+
+        .roster-player:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .roster-player .player-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .roster-player .player-cost {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .roster-empty {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+            font-style: italic;
+        }
+
+        .roster-summary {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 2px solid rgba(102, 126, 234, 0.3);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+        }
+
+        .roster-summary .budget-left {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .roster-summary .total-spent {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
         /* Animations */
         @keyframes pulse {
             0% {
@@ -588,13 +703,15 @@
                     <h3>Current Player</h3>
                     <p id="current-player">-</p>
                 </div>
-                <div class="info-card">
-                    <h3>Previous Leader</h3>
-                    <p id="previous-leader">-</p>
-                </div>
-                <div class="info-card">
-                    <h3>Previous Bid</h3>
-                    <p id="previous-bid">-</p>
+                <div class="info-card" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div>
+                        <h3 style="margin-bottom: 5px;">Previous Bid</h3>
+                        <p id="previous-bid" style="color: #ffb3b3; margin: 0;">-</p>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 5px;">Previous Leader</h3>
+                        <p id="previous-leader" style="margin: 0;">-</p>
+                    </div>
                 </div>
                 <div class="info-card" style="display: flex; flex-direction: column; gap: 10px;">
                     <div>
@@ -667,6 +784,16 @@
             <div style="margin-top: 15px; display: flex; gap: 10px;">
                 <button class="admin-btn" style="background: #28a745;" onclick="saveTeamSetup()">💾 Save Team Configuration</button>
                 <button class="admin-btn" style="background: #17a2b8;" onclick="loadDefaultTeams()">📝 Load Sample Teams</button>
+            </div>
+        </div>
+
+        <!-- Team Rosters Section -->
+        <div class="data-section">
+            <h2>Current Team Rosters</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div id="team-rosters" style="display: contents;">
+                    <!-- Team roster cards will be populated here -->
+                </div>
             </div>
         </div>
 
@@ -745,7 +872,7 @@ Player1, Player2, Player3"></textarea>
 
         <!-- Drafted Players -->
         <div class="data-section">
-            <h2>Drafted Players</h2>
+            <h2>Drafted Players - History</h2>
             <table class="data-table">
                 <thead>
                     <tr>
@@ -872,6 +999,7 @@ Player1, Player2, Player3"></textarea>
             if (!hasError) {
                 auctionState.teams = teams;
                 renderTeams();
+                updateTeamRosters();  // Add this line
                 alert('Team configuration saved successfully!');
             }
         }
@@ -1147,6 +1275,7 @@ Player1, Player2, Player3"></textarea>
             // Update displays
             updateDraftedPlayersTable();
             displayAvailablePlayers();
+            updateTeamRosters();  // Add this line
 
             // Show alert before reset
             alert(`${playerName} sold to ${winningTeam.name} for ₹${auctionState.currentBid}k!`);
@@ -1786,8 +1915,65 @@ Player1, Player2, Player3"></textarea>
             console.log('For Google Sheets integration, implement API connection here');
         }
 
-        // Remove Setup Functions (no longer needed)
-        // Initialize on load
+        // Update Team Rosters Display
+        function updateTeamRosters() {
+            const container = document.getElementById('team-rosters');
+            container.innerHTML = '';
+            
+            auctionState.teams.forEach(team => {
+                const rosterCard = document.createElement('div');
+                rosterCard.className = 'roster-card';
+                
+                // Create logo content
+                let logoContent = team.logo;
+                if (team.logoUrl) {
+                    logoContent = `<img src="${team.logoUrl}" alt="${team.name}">`;
+                }
+                
+                // Calculate stats
+                const totalSpent = 100 - team.budget;
+                const playersCount = team.players.length;
+                const remainingSlots = 6 - playersCount;
+                
+                // Create players list HTML
+                let playersHtml = '';
+                if (team.players.length > 0) {
+                    team.players.forEach(player => {
+                        playersHtml += `
+                            <div class="roster-player">
+                                <span class="player-name">${player.name}</span>
+                                <span class="player-cost">₹${player.cost}k</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    playersHtml = '<div class="roster-empty">No players drafted yet</div>';
+                }
+                
+                rosterCard.innerHTML = `
+                    <div class="roster-header">
+                        <div class="roster-logo">${logoContent}</div>
+                        <div class="roster-info">
+                            <h4>${team.name}</h4>
+                            <div class="roster-stats">
+                                <span>Players: ${playersCount}/6</span>
+                                <span>•</span>
+                                <span>Slots: ${remainingSlots}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="roster-players">
+                        ${playersHtml}
+                    </div>
+                    <div class="roster-summary">
+                        <span class="budget-left">Budget: ₹${team.budget}k</span>
+                        <span class="total-spent">Spent: ₹${totalSpent}k</span>
+                    </div>
+                `;
+                
+                container.appendChild(rosterCard);
+            });
+        }
         window.onload = function() {
             initializeTeams();
             
